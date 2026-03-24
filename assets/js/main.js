@@ -1,4 +1,4 @@
-$(function () {
+jQuery(function ($) {
 
     /* ======================
        DRAGGABLE ITEMS
@@ -51,14 +51,18 @@ $(function () {
                 return;
             }
 
-            // Logo: navigate on click
+            // Logo: navigate, respect target attribute
             if (item.classList.contains('logo-item') && !item.classList.contains('instagram')) {
                 const link = item.querySelector('a');
-                if (link) window.location.href = link.getAttribute('href');
+                if (link) {
+                    link.getAttribute('target') === '_blank'
+                        ? window.open(link.getAttribute('href'), '_blank')
+                        : (window.location.href = link.getAttribute('href'));
+                }
                 return;
             }
 
-            // Instagram: open link
+            // Instagram
             if (item.classList.contains('instagram')) {
                 const link = item.querySelector('a');
                 if (link) window.open(link.getAttribute('href'), '_blank');
@@ -70,8 +74,7 @@ $(function () {
             if (!targetModalId) return;
 
             $('.product-modal').removeClass('active');
-            const $target = $('#' + targetModalId);
-            $target.addClass('active').scrollTop(0);
+            $('#' + targetModalId).addClass('active').scrollTop(0);
             $('body').css('overflow', 'hidden');
         });
     });
@@ -98,11 +101,7 @@ $(function () {
                     img.style.width  = 'auto';
                 }
             }
-            if (!img.complete) {
-                img.onload = applySize;
-            } else {
-                applySize();
-            }
+            if (!img.complete) { img.onload = applySize; } else { applySize(); }
         });
     }
 
@@ -132,12 +131,9 @@ $(function () {
         const shuffled = shuffle(cells);
 
         items.forEach(function (el, index) {
-            const elWidth  = el.offsetWidth;
-            const elHeight = el.offsetHeight;
-            const cell     = shuffled[index];
-
-            const randX = Math.max(0, Math.random() * (cellWidth  - elWidth));
-            const randY = Math.max(0, Math.random() * (cellHeight - elHeight));
+            const cell  = shuffled[index];
+            const randX = Math.max(0, Math.random() * (cellWidth  - el.offsetWidth));
+            const randY = Math.max(0, Math.random() * (cellHeight - el.offsetHeight));
 
             gsap.to(el, {
                 left:     cell.x + randX,
@@ -171,7 +167,7 @@ $(function () {
     $(document).on('click', function (e) {
         if (
             $('.product-modal.active').length &&
-            !$(e.target).closest('.modal-content, .draggableItem').length
+            !$(e.target).closest('.modal-content, .draggableItem, .detail-modal').length
         ) {
             $('.product-modal').removeClass('active');
             $('body').css('overflow', '');
@@ -179,52 +175,37 @@ $(function () {
     });
 
     /* ======================
-       DETAIL MODAL — OPEN (dynamic)
+       DETAIL MODAL — OPEN via AJAX
     ====================== */
     $(document).on('click', '.modal-item img, .modal-item .product-name', function () {
-        const $item = $(this).closest('.modal-item');
+        const productId = $(this).closest('.modal-item').data('product-id');
+        if (!productId) return;
 
-        const title    = $item.data('title');
-        const price    = $item.data('price');
-        const soldOut  = $item.data('sold-out');  // "true" / "false"
-        const desc     = $item.data('desc');
-        const img1     = $item.data('img1');
-        const img2     = $item.data('img2');
-        const color    = $item.data('color');
-        const material = $item.data('material');
-        const madeIn   = $item.data('made-in');
-
-        // Populate text fields
-        $('#detail-modal .detail-title').text(title);
-        $('#detail-modal .detail-price').text(price);
-        $('#detail-modal .detail-desc').text(desc);
-        $('#detail-modal .detail-color').text(color);
-        $('#detail-modal .detail-material').text(material);
-        $('#detail-modal .detail-made-in').text(madeIn);
-
-        // Populate images
-        let imgHtml = '<img src="' + img1 + '" alt="' + title + '">';
-        if (img2) imgHtml += '<img src="' + img2 + '" alt="' + title + '">';
-        $('#detail-modal .detail-right').html(imgHtml);
-
-        // Sold out state
-        if (soldOut === 'true' || soldOut === true) {
-            $('.add-cart-btn').not('.total-btn').prop('disabled', true).text('SOLD OUT');
-        } else {
-            $('.add-cart-btn').not('.total-btn').prop('disabled', false).text('ADD TO CART');
-        }
-
-        // Store current product on modal for cart use
-        $('#detail-modal').data('current', {
-            title:   title,
-            price:   price,
-            img:     img1,
-            soldOut: soldOut,
-        });
-
+        // Show modal immediately with loading state
+        $('#detail-modal .detail-inner').html('<div class="detail-loading">Loading...</div>');
         $('#detail-modal').addClass('active');
         $('body').css('overflow', 'hidden');
-        $('#detail-modal .detail-right').scrollTop(0);
+
+        $.ajax({
+            url:  slgData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action:     'slg_product_detail',
+                nonce:      slgData.nonce,
+                product_id: productId,
+            },
+            success: function (response) {
+                if (response.success) {
+                    $('#detail-modal .detail-inner').html(response.data.html);
+                    $('#detail-modal .detail-right').scrollTop(0);
+                } else {
+                    $('#detail-modal .detail-inner').html('<div class="detail-loading">Failed to load product.</div>');
+                }
+            },
+            error: function () {
+                $('#detail-modal .detail-inner').html('<div class="detail-loading">Error loading product.</div>');
+            },
+        });
     });
 
     /* ======================
@@ -232,115 +213,120 @@ $(function () {
     ====================== */
     $('.modal-close2, .detail-overlay').on('click', function () {
         $('#detail-modal').removeClass('active');
-        $('body').css('overflow', '');
+        // Keep body scroll locked if the product list modal is still open
+        if ( ! $('.product-modal.active').length ) {
+            $('body').css('overflow', '');
+        }
     });
 
     /* ======================
-       CART — JS STORE
+       CART — SHARED UI UPDATE
     ====================== */
-    let cart = [];
-
-    function formatPrice(num) {
-        return '₩' + num.toLocaleString('ko-KR');
-    }
-
-    function parsePriceNum(priceStr) {
-        return parseInt(priceStr.replace(/[^0-9]/g, ''), 10) || 0;
-    }
-
-    function updateCartUI() {
-        const total = cart.reduce(function (sum, item) {
-            return sum + parsePriceNum(item.price) * item.qty;
-        }, 0);
-        const count = cart.reduce(function (sum, item) { return sum + item.qty; }, 0);
-
-        $('.cart-count').text(count);
-        $('.cart-count-label').text(count);
-        $('.cart-subtotal').text(formatPrice(total));
-
-        if (count > 0) {
+    function updateCartUI(data) {
+        $('.cart-items-wrap').html(data.html);
+        $('.cart-count, .cart-count-label').text(data.count);
+        $('.cart-subtotal').text(data.total);
+        if (parseInt(data.count, 10) > 0) {
             $('.cart-btn').addClass('active');
         } else {
             $('.cart-btn').removeClass('active');
         }
+    }
 
-        const $wrap = $('.cart-items-wrap');
-        $wrap.empty();
-
-        if (cart.length === 0) {
-            $wrap.html('<p class="cart-empty">Your cart is empty.</p>');
-            return;
-        }
-
-        cart.forEach(function (item, idx) {
-            const $el = $([
-                '<div class="cart-item" data-index="' + idx + '">',
-                '  <label class="item-check"><input type="checkbox" checked /><span class="checkmark"></span></label>',
-                '  <div class="item-image"><img src="' + item.img + '" alt="' + item.title + '"></div>',
-                '  <div class="item-info">',
-                '    <h3 class="item-title">' + item.title + '</h3>',
-                '    <p class="item-price">' + item.price + '</p>',
-                '    <div class="item-quantity">',
-                '      <button class="qty-btn minus">−</button>',
-                '      <span class="qty-value">' + item.qty + '</span>',
-                '      <button class="qty-btn plus">+</button>',
-                '      <button class="remove-btn">Remove</button>',
-                '    </div>',
-                '  </div>',
-                '</div>',
-            ].join(''));
-            $wrap.append($el);
+    function loadCart() {
+        $.ajax({
+            url:  slgData.ajaxUrl,
+            type: 'POST',
+            data: { action: 'slg_get_cart' },
+            success: function (response) {
+                if (response.success) updateCartUI(response.data);
+            },
         });
     }
 
-    // Add to cart
+    // Load cart count on page load (reflects existing WC session)
+    loadCart();
+
+    /* ======================
+       ADD TO CART (WC AJAX)
+    ====================== */
     $(document).on('click', '.add-cart-btn:not(.total-btn)', function () {
-        const current = $('#detail-modal').data('current');
-        if (!current || current.soldOut === 'true') return;
+        const $btn      = $(this);
+        const productId = $btn.data('product-id');
+        if (!productId || $btn.prop('disabled')) return;
 
-        const existing = cart.find(function (i) { return i.title === current.title; });
-        if (existing) {
-            existing.qty += 1;
-        } else {
-            cart.push({ title: current.title, price: current.price, img: current.img, qty: 1 });
-        }
+        $btn.prop('disabled', true).text('Adding...');
 
-        updateCartUI();
-        $('.cart-modal').addClass('active');
-    });
+        $.ajax({
+            url:  slgData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action:     'slg_add_to_cart',
+                nonce:      slgData.nonce,
+                product_id: productId,
+                quantity:   $btn.data('quantity') || 1,
+            },
+            success: function (response) {
+                if (response.success) {
+                    var data = response.data;
+                    $('.cart-count, .cart-count-label').text(data.count);
+                    if (parseInt(data.count, 10) > 0) $('.cart-btn').addClass('active');
 
-    // Quantity buttons
-    $(document).on('click', '.qty-btn.plus', function () {
-        const idx = $(this).closest('.cart-item').data('index');
-        cart[idx].qty += 1;
-        updateCartUI();
-    });
-
-    $(document).on('click', '.qty-btn.minus', function () {
-        const idx = $(this).closest('.cart-item').data('index');
-        if (cart[idx].qty > 1) {
-            cart[idx].qty -= 1;
-        } else {
-            cart.splice(idx, 1);
-        }
-        updateCartUI();
-    });
-
-    $(document).on('click', '.remove-btn', function () {
-        const idx = $(this).closest('.cart-item').data('index');
-        cart.splice(idx, 1);
-        updateCartUI();
+                    loadCart();                      // refresh cart modal content
+                    $('.cart-modal').addClass('active'); // open cart
+                }
+                $btn.prop('disabled', false).text('ADD TO CART');
+            },
+            error: function () {
+                $btn.prop('disabled', false).text('ADD TO CART');
+            },
+        });
     });
 
     /* ======================
        CART MODAL — OPEN / CLOSE
     ====================== */
     $('.cart-btn').on('click', function () {
+        loadCart();
         $('.cart-modal').addClass('active');
     });
 
     $('.modal-close3').on('click', function () {
         $('.cart-modal').removeClass('active');
+    });
+
+    /* ======================
+       CART — QTY & REMOVE
+    ====================== */
+    function cartUpdate(cartKey, quantity) {
+        $.ajax({
+            url:  slgData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action:   'slg_update_cart',
+                nonce:    slgData.nonce,
+                cart_key: cartKey,
+                quantity: quantity,
+            },
+            success: function (response) {
+                if (response.success) updateCartUI(response.data);
+            },
+        });
+    }
+
+    $(document).on('click', '.qty-btn.plus', function () {
+        const $qty = $(this).closest('.item-quantity').find('.qty-value');
+        cartUpdate($(this).data('key'), parseInt($qty.text(), 10) + 1);
+    });
+
+    $(document).on('click', '.qty-btn.minus', function () {
+        const $qty = $(this).closest('.item-quantity').find('.qty-value');
+        const qty  = Math.max(0, parseInt($qty.text(), 10) - 1);
+        cartUpdate($(this).data('key'), qty);
+    });
+
+    $(document).on('click', '.remove-btn', function () {
+        cartUpdate($(this).data('key'), 0);
     });
 
     /* ======================
@@ -350,7 +336,7 @@ $(function () {
         const $btn     = $(this);
         const $content = $btn.next('.details-table');
         const $aside   = $btn.closest('.aside-info');
-        const isFirst  = $('.toggle-button').index($btn) === 0;
+        const isFirst  = $aside.find('.toggle-button').index($btn) === 0;
 
         $content.slideToggle(100, function () {
             const isVisible  = $content.is(':visible');
@@ -359,11 +345,7 @@ $(function () {
             $btn.text(isVisible ? '— ' + currentTxt : currentTxt);
 
             if (isFirst) {
-                if (isVisible) {
-                    $aside.removeClass('no-gap');
-                } else {
-                    $aside.addClass('no-gap');
-                }
+                $aside.toggleClass('no-gap', !isVisible);
             }
         });
     });
