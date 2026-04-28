@@ -1,0 +1,232 @@
+{
+    "key": "group_slg_home_nav",
+    "title": "Home Navigation Items",
+    "fields": [
+        {
+            "key": "field_nav_items",
+            "label": "Navigation Items",
+            "name": "nav_items",
+            "type": "repeater",
+            "instructions": "Add, remove, or reorder items shown on the homepage.",
+            "required": 0,
+            "conditional_logic": 0,
+            "layout": "block",
+            "button_label": "Add Item",
+            "sub_fields": [
+                {
+                    "key": "field_nav_item_type",
+                    "label": "Type",
+                    "name": "item_type",
+                    "type": "select",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "choices": {
+                        "logo": "Logo",
+                        "instagram": "Instagram",
+                        "shop": "Shop Item",
+                        "intro": "Intro Icon (?)"
+                    },
+                    "default_value": "",
+                    "allow_null": 0,
+                    "multiple": 0,
+                    "ui": 0,
+                    "return_format": "value",
+                    "ajax": 0,
+                    "wrapper": { "width": "50", "class": "", "id": "" }
+                },
+                {
+                    "key": "field_nav_item_enabled",
+                    "label": "Enabled",
+                    "name": "item_enabled",
+                    "type": "true_false",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "message": "",
+                    "default_value": 1,
+                    "ui": 1,
+                    "ui_on_text": "",
+                    "ui_off_text": "",
+                    "wrapper": { "width": "50", "class": "", "id": "" }
+                },
+                {
+                    "key": "field_nav_item_image",
+                    "label": "Image",
+                    "name": "item_image",
+                    "type": "image",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": [
+                        [
+                            {
+                                "field": "field_nav_item_type",
+                                "operator": "==",
+                                "value": "logo"
+                            }
+                        ],
+                        [
+                            {
+                                "field": "field_nav_item_type",
+                                "operator": "==",
+                                "value": "shop"
+                            }
+                        ]
+                    ],
+                    "return_format": "url",
+                    "preview_size": "medium",
+                    "library": "all",
+                    "min_width": "",
+                    "min_height": "",
+                    "min_size": "",
+                    "max_width": "",
+                    "max_height": "",
+                    "max_size": "",
+                    "mime_types": ""
+                },
+                {
+                    "key": "field_nav_item_url",
+                    "label": "URL",
+                    "name": "item_url",
+                    "type": "url",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": [
+                        [
+                            {
+                                "field": "field_nav_item_type",
+                                "operator": "==",
+                                "value": "logo"
+                            }
+                        ],
+                        [
+                            {
+                                "field": "field_nav_item_type",
+                                "operator": "==",
+                                "value": "instagram"
+                            }
+                        ]
+                    ],
+                    "default_value": "",
+                    "placeholder": ""
+                },
+                {
+                    "key": "field_nav_item_target",
+                    "label": "Open in",
+                    "name": "item_target",
+                    "type": "select",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": [
+                        [
+                            {
+                                "field": "field_nav_item_type",
+                                "operator": "==",
+                                "value": "logo"
+                            }
+                        ]
+                    ],
+                    "choices": {
+                        "_blank": "New tab",
+                        "_self": "Same tab"
+                    },
+                    "default_value": "_blank",
+                    "allow_null": 0,
+                    "multiple": 0,
+                    "ui": 0,
+                    "return_format": "value",
+                    "ajax": 0,
+                    "wrapper": { "width": "50", "class": "", "id": "" }
+                },
+                {
+                    "key": "field_nav_item_label",
+                    "label": "Overlay Label",
+                    "name": "item_label",
+                    "type": "text",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": [
+                        [
+                            {
+                                "field": "field_nav_item_type",
+                                "operator": "==",
+                                "value": "shop"
+                            }
+                        ]
+                    ],
+                    "default_value": "",
+                    "placeholder": "",
+                    "prepend": "",
+                    "append": "",
+                    "maxlength": "",
+                    "wrapper": { "width": "50", "class": "", "id": "" }
+                },
+                {
+                    "key": "field_nav_item_modal_id",
+                    "label": "Modal ID",
+                    "name": "item_modal_id",
+                    "type": "text",
+                    "instructions": "Unique ID for the modal, e.g. modal-01",
+                    "required": 0,
+                    "conditional_logic": [
+                        [
+                            {
+                                "field": "field_nav_item_type",
+                                "operator": "==",
+                                "value": "shop"
+                            }
+                        ]
+                    ],
+                    "default_value": "",
+                    "placeholder": "modal-01",
+                    "prepend": "",
+                    "append": "",
+                    "maxlength": "",
+                    "wrapper": { "width": "50", "class": "", "id": "" }
+                },
+                {
+                    "key": "field_nav_item_category",
+                    "label": "WooCommerce Category Slug",
+                    "name": "item_category_slug",
+                    "type": "text",
+                    "instructions": "e.g. soft-life-glide",
+                    "required": 0,
+                    "conditional_logic": [
+                        [
+                            {
+                                "field": "field_nav_item_type",
+                                "operator": "==",
+                                "value": "shop"
+                            }
+                        ]
+                    ],
+                    "default_value": "",
+                    "placeholder": "soft-life-glide",
+                    "prepend": "",
+                    "append": "",
+                    "maxlength": "",
+                    "wrapper": { "width": "50", "class": "", "id": "" }
+                }
+            ]
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "options_page",
+                "operator": "==",
+                "value": "slg-home-navigation"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "modified": 1744761600
+}

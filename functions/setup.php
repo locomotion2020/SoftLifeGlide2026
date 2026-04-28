@@ -3,6 +3,7 @@ function slg_theme_setup() {
     add_theme_support( 'title-tag' );
     add_theme_support( 'post-thumbnails' );
     add_theme_support( 'woocommerce' );
+    add_image_size( 'slg-product-thumb', 1200, 1600, true );
 }
 add_action( 'after_setup_theme', 'slg_theme_setup' );
 
@@ -11,7 +12,7 @@ function slg_enqueue_assets() {
     $uri = get_template_directory_uri();
 
     // Styles
-    wp_enqueue_style( 'slg-typekit',  'https://use.typekit.net/oan3kdr.css', [], null );
+    // wp_enqueue_style( 'slg-typekit',  'https://use.typekit.net/cur3npe.css', [], null );
     wp_enqueue_style( 'slg-aos',      'https://unpkg.com/aos@2.3.1/dist/aos.css', [], null );
     wp_enqueue_style( 'slg-module',   $uri . '/assets/css/module.css', [], $ver );
     wp_enqueue_style( 'slg-main',     $uri . '/assets/css/index.css', [ 'slg-module' ], $ver );
@@ -42,5 +43,49 @@ function slg_dequeue_block_styles() {
 }
 add_action( 'wp_enqueue_scripts', 'slg_dequeue_block_styles', 20 );
 
+// Adobe font embed
+add_action('wp_head', 'slg_head_add_3rd_party_tags');
+
+function slg_head_add_3rd_party_tags() {
+    ?>
+    <script>
+        (function(d) {
+            var config = {
+            kitId: 'cur3npe',
+            scriptTimeout: 3000,
+            async: true
+            },
+            h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+        })(document);
+    </script>
+
+<?php
+}
+
+// Allow SVG uploads in media library
+add_filter( 'upload_mimes', function( $mimes ) {
+    $mimes['svg']  = 'image/svg+xml';
+    $mimes['svgz'] = 'image/svg+xml';
+    return $mimes;
+} );
+
+add_filter( 'wp_check_filetype_and_ext', function( $data, $file, $filename, $mimes ) {
+    $ext = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
+    if ( $ext === 'svg' || $ext === 'svgz' ) {
+        $data['ext']  = $ext;
+        $data['type'] = 'image/svg+xml';
+    }
+    return $data;
+}, 10, 4 );
+
+// Product helpers
+require_once __DIR__ . '/products.php';
+
 // AJAX handlers
 require_once __DIR__ . '/ajax.php';
+
+// ACF Options Page — Home Navigation
+require_once __DIR__ . '/options.php';
+
+// WooCommerce checkout customizations
+require_once __DIR__ . '/checkout.php';

@@ -1,55 +1,12 @@
 jQuery(function ($) {
 
     /* ======================
-       DRAGGABLE ITEMS
+       CLICKABLE ITEMS
     ====================== */
     const items = document.querySelectorAll('.draggableItem');
 
     items.forEach(function (item) {
-        let isDragging = false;
-        let isMoved    = false;
-        let offsetX    = 0;
-        let offsetY    = 0;
-        let startX     = 0;
-        let startY     = 0;
-
-        item.addEventListener('pointerdown', function (e) {
-            if (e.target.closest('.shop-item-btn')) return;
-
-            isDragging = true;
-            isMoved    = false;
-            startX     = e.clientX;
-            startY     = e.clientY;
-
-            item.setPointerCapture(e.pointerId);
-            item.classList.add('dragging');
-
-            offsetX = e.clientX - item.offsetLeft;
-            offsetY = e.clientY - item.offsetTop;
-        });
-
-        item.addEventListener('pointermove', function (e) {
-            if (!isDragging) return;
-
-            const moveX = Math.abs(e.clientX - startX);
-            const moveY = Math.abs(e.clientY - startY);
-            if (moveX > 5 || moveY > 5) isMoved = true;
-
-            item.style.left = (e.clientX - offsetX) + 'px';
-            item.style.top  = (e.clientY - offsetY) + 'px';
-        });
-
-        item.addEventListener('pointerup', function (e) {
-            isDragging = false;
-            item.releasePointerCapture(e.pointerId);
-            item.classList.remove('dragging');
-        });
-
-        item.addEventListener('click', function (e) {
-            if (isMoved) {
-                e.preventDefault();
-                return;
-            }
+        item.addEventListener('click', function () {
 
             // Logo: navigate, respect target attribute
             if (item.classList.contains('logo-item') && !item.classList.contains('instagram')) {
@@ -59,6 +16,12 @@ jQuery(function ($) {
                         ? window.open(link.getAttribute('href'), '_blank')
                         : (window.location.href = link.getAttribute('href'));
                 }
+                return;
+            }
+
+            // Intro icon: open introduction modal
+            if (item.classList.contains('intro-icon')) {
+                $('#intro-modal').addClass('active');
                 return;
             }
 
@@ -175,14 +138,98 @@ jQuery(function ($) {
     });
 
     /* ======================
+       INTRO MODAL (? icon) — OPEN / CLOSE
+    ====================== */
+    $('.intro-modal-close').on('click', function () {
+        $('#intro-modal').removeClass('active');
+    });
+
+    $(document).on('click', function (e) {
+        if (
+            $('#intro-modal').hasClass('active') &&
+            !$(e.target).closest('#intro-modal, .intro-icon').length
+        ) {
+            $('#intro-modal').removeClass('active');
+        }
+    });
+
+    /* ======================
+       FOOTER NAV — Information (info bar)
+    ====================== */
+    $('#footer-information').on('click', function () {
+        $('#page-content-modal').removeClass('active');
+        $('#info-bar').toggleClass('active');
+        $(this).toggleClass('active');
+    });
+
+    $(document).on('click', function (e) {
+        if (
+            $('#info-bar').hasClass('active') &&
+            !$(e.target).closest('#info-bar, #footer-information').length
+        ) {
+            $('#info-bar').removeClass('active');
+            $('#footer-information').removeClass('active');
+        }
+    });
+
+    /* ======================
+       FOOTER NAV — Page Content Modal (T&C / Privacy Policy)
+    ====================== */
+    function openPageModal( pageId ) {
+        $('#info-bar').removeClass('active'); // close info bar if open
+        $('#footer-information').removeClass('active');
+        $('#page-content-modal')
+            .addClass('active')
+            .find('.page-modal-title').text('');
+        $('#page-content-modal .page-modal-body').html(
+            '<p class="page-modal-loading font-myungjo">Loading...</p>'
+        );
+
+        $.ajax({
+            url:  slgData.ajaxUrl,
+            type: 'POST',
+            data: { action: 'slg_get_page_content', page_id: pageId },
+            success: function ( response ) {
+                if ( response.success ) {
+                    $('#page-content-modal .page-modal-title').text( response.data.title );
+                    $('#page-content-modal .page-modal-body').html( response.data.content );
+                } else {
+                    $('#page-content-modal .page-modal-body').html(
+                        '<p class="page-modal-loading font-myungjo">Content not found.</p>'
+                    );
+                }
+            },
+            error: function () {
+                $('#page-content-modal .page-modal-body').html(
+                    '<p class="page-modal-loading font-myungjo">Error loading content.</p>'
+                );
+            },
+        });
+    }
+
+    $('#footer-terms').on('click',   function () { openPageModal( 59 ); });
+    $('#footer-privacy').on('click', function () { openPageModal( 3 ); });
+
+    $('.page-modal-close').on('click', function () {
+        $('#page-content-modal').removeClass('active');
+    });
+
+    $(document).on('click', function (e) {
+        if (
+            $('#page-content-modal').hasClass('active') &&
+            !$(e.target).closest('#page-content-modal, #footer-terms, #footer-privacy').length
+        ) {
+            $('#page-content-modal').removeClass('active');
+        }
+    });
+
+    /* ======================
        DETAIL MODAL — OPEN via AJAX
     ====================== */
-    $(document).on('click', '.modal-item img, .modal-item .product-name', function () {
-        const productId = $(this).closest('.modal-item').data('product-id');
+    function openDetailModal(productId) {
         if (!productId) return;
 
-        // Show modal immediately with loading state
-        $('#detail-modal .detail-inner').html('<div class="detail-loading">Loading...</div>');
+        $('#detail-modal .detail-inner').html('<div class="detail-loading font-myungjo">Loading...</div>');
         $('#detail-modal').addClass('active');
         $('body').css('overflow', 'hidden');
 
@@ -199,13 +246,23 @@ jQuery(function ($) {
                     $('#detail-modal .detail-inner').html(response.data.html);
                     $('#detail-modal .detail-right').scrollTop(0);
                 } else {
-                    $('#detail-modal .detail-inner').html('<div class="detail-loading">Failed to load product.</div>');
+                    $('#detail-modal .detail-inner').html('<div class="detail-loading font-myungjo">Failed to load product.</div>');
                 }
             },
             error: function () {
-                $('#detail-modal .detail-inner').html('<div class="detail-loading">Error loading product.</div>');
+                $('#detail-modal .detail-inner').html('<div class="detail-loading font-myungjo">Error loading product.</div>');
             },
         });
+    }
+
+    $(document).on('click', '.modal-item img, .modal-item .product-name', function () {
+        openDetailModal( $(this).closest('.modal-item').data('product-id') );
+    });
+
+    // Open detail modal from cart item image or title
+    $(document).on('click', '.cart-item .item-image img, .cart-item .item-title', function () {
+        $('.cart-modal').removeClass('active');
+        openDetailModal( $(this).closest('.cart-item').data('product-id') );
     });
 
     /* ======================
@@ -213,11 +270,90 @@ jQuery(function ($) {
     ====================== */
     $('.modal-close2, .detail-overlay').on('click', function () {
         $('#detail-modal').removeClass('active');
-        // Keep body scroll locked if the product list modal is still open
-        if ( ! $('.product-modal.active').length ) {
+        // Keep body scroll locked if a product list or cart modal is still open
+        if ( ! $('.product-modal.active').length && ! $('.cart-modal.active').length ) {
             $('body').css('overflow', '');
         }
     });
+
+    /* ======================
+       GALLERY SLIDER MODAL
+    ====================== */
+    var galleryImages = [];
+    var galleryIndex  = 0;
+
+    function openGallery(images, startIndex) {
+        galleryImages = images;
+        galleryIndex  = startIndex;
+        showGallerySlide();
+        $('#gallery-modal').addClass('active');
+        $('body').css('overflow', 'hidden');
+    }
+
+    function closeGallery() {
+        $('#gallery-modal').removeClass('active');
+        // Keep scroll locked if detail modal is still open
+        if ( ! $('#detail-modal').hasClass('active') ) {
+            $('body').css('overflow', '');
+        }
+    }
+
+    function showGallerySlide() {
+        var src = galleryImages[galleryIndex];
+        $('#gallery-modal .gallery-img').attr('src', src).attr('alt', '');
+    }
+
+    // Open gallery when clicking product images inside detail modal
+    $(document).on('click', '#detail-modal .detail-right img', function () {
+        var imgs = [];
+        $('#detail-modal .detail-right img').each(function () {
+            imgs.push($(this).attr('src'));
+        });
+        var idx = $('#detail-modal .detail-right img').index(this);
+        openGallery(imgs, idx);
+    });
+
+    $('.gallery-close, .gallery-overlay').on('click', closeGallery);
+
+    $('.gallery-next').on('click', function () {
+        galleryIndex = (galleryIndex + 1) % galleryImages.length;
+        showGallerySlide();
+    });
+
+    $('.gallery-prev').on('click', function () {
+        galleryIndex = (galleryIndex - 1 + galleryImages.length) % galleryImages.length;
+        showGallerySlide();
+    });
+
+    $(document).on('keydown', function (e) {
+        if ( ! $('#gallery-modal').hasClass('active') ) return;
+        if (e.key === 'ArrowRight') {
+            galleryIndex = (galleryIndex + 1) % galleryImages.length;
+            showGallerySlide();
+        } else if (e.key === 'ArrowLeft') {
+            galleryIndex = (galleryIndex - 1 + galleryImages.length) % galleryImages.length;
+            showGallerySlide();
+        } else if (e.key === 'Escape') {
+            closeGallery();
+        }
+    });
+
+    // Touch swipe
+    var swipeStartX = 0;
+    document.getElementById('gallery-modal').addEventListener('touchstart', function (e) {
+        swipeStartX = e.touches[0].clientX;
+    }, { passive: true });
+    document.getElementById('gallery-modal').addEventListener('touchend', function (e) {
+        if ( ! $('#gallery-modal').hasClass('active') ) return;
+        var dx = e.changedTouches[0].clientX - swipeStartX;
+        if (Math.abs(dx) < 50) return;
+        if (dx < 0) {
+            galleryIndex = (galleryIndex + 1) % galleryImages.length;
+        } else {
+            galleryIndex = (galleryIndex - 1 + galleryImages.length) % galleryImages.length;
+        }
+        showGallerySlide();
+    }, { passive: true });
 
     /* ======================
        CART — SHARED UI UPDATE
@@ -272,8 +408,8 @@ jQuery(function ($) {
                     $('.cart-count, .cart-count-label').text(data.count);
                     if (parseInt(data.count, 10) > 0) $('.cart-btn').addClass('active');
 
-                    loadCart();                      // refresh cart modal content
-                    $('.cart-modal').addClass('active'); // open cart
+                    loadCart();
+                    openCartModal();
                 }
                 $btn.prop('disabled', false).text('ADD TO CART');
             },
@@ -286,14 +422,21 @@ jQuery(function ($) {
     /* ======================
        CART MODAL — OPEN / CLOSE
     ====================== */
-    $('.cart-btn').on('click', function () {
+    function openCartModal() {
         loadCart();
         $('.cart-modal').addClass('active');
-    });
+        $('body').css('overflow', 'hidden');
+    }
 
-    $('.modal-close3').on('click', function () {
+    function closeCartModal() {
         $('.cart-modal').removeClass('active');
-    });
+        if ( ! $('.product-modal.active').length && ! $('#detail-modal').hasClass('active') ) {
+            $('body').css('overflow', '');
+        }
+    }
+
+    $('.cart-btn').on('click', openCartModal);
+    $('.modal-close3, .cart-overlay').on('click', closeCartModal);
 
     /* ======================
        CART — QTY & REMOVE

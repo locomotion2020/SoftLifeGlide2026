@@ -49,6 +49,9 @@ function slg_ajax_product_detail() {
     $btn_text    = $in_stock ? 'ADD TO CART' : 'SOLD OUT';
     $btn_disable = $in_stock ? '' : ' disabled';
 
+    $shipping_text = get_field( 'shipping_guide', $product_id ) ?: get_field( 'shipping_guide', 'option' );
+    $return_text   = get_field( 'return_guide',   $product_id ) ?: get_field( 'return_guide',   'option' );
+
     ob_start();
     ?>
     <div class="detail-left">
@@ -73,15 +76,18 @@ function slg_ajax_product_detail() {
             <div class="toggle-group">
                 <button class="toggle-button">— Shipping &amp; Returns</button>
                 <div class="details-table">
+                    <?php if ( $shipping_text ) : ?>
                     <div class="row">
                         <span class="label">Shipping</span>
-                        <span>Standard 3–5 business days<br>Express 1–2 business days</span>
+                        <span><?php echo wp_kses_post( $shipping_text ); ?></span>
                     </div>
+                    <?php endif; ?>
+                    <?php if ( $return_text ) : ?>
                     <div class="row">
                         <span class="label">Returns</span>
-                        <span>Exchange only. Must be initiated within 7 days of delivery.</span>
+                        <span><?php echo wp_kses_post( $return_text ); ?></span>
                     </div>
-                    <p class="return-info">All items are final sale. We do not offer refunds.</p>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -94,6 +100,26 @@ function slg_ajax_product_detail() {
 }
 add_action( 'wp_ajax_slg_product_detail',        'slg_ajax_product_detail' );
 add_action( 'wp_ajax_nopriv_slg_product_detail', 'slg_ajax_product_detail' );
+
+/* ======================
+   PAGE CONTENT (Terms & Conditions, Privacy Policy)
+====================== */
+function slg_ajax_get_page_content() {
+    $page_id = isset( $_POST['page_id'] ) ? absint( $_POST['page_id'] ) : 0;
+    if ( ! $page_id ) wp_send_json_error( 'Invalid page ID.' );
+
+    $page = get_post( $page_id );
+    if ( ! $page || $page->post_status !== 'publish' ) {
+        wp_send_json_error( 'Page not found.' );
+    }
+
+    wp_send_json_success( [
+        'title'   => html_entity_decode( $page->post_title, ENT_QUOTES, 'UTF-8' ),
+        'content' => apply_filters( 'the_content', $page->post_content ),
+    ] );
+}
+add_action( 'wp_ajax_slg_get_page_content',        'slg_ajax_get_page_content' );
+add_action( 'wp_ajax_nopriv_slg_get_page_content', 'slg_ajax_get_page_content' );
 
 /* ======================
    ADD TO CART
@@ -125,7 +151,7 @@ add_action( 'wp_ajax_nopriv_slg_add_to_cart', 'slg_ajax_add_to_cart' );
 function slg_ajax_get_cart() {
     $items = WC()->cart->get_cart();
     $count = WC()->cart->get_cart_contents_count();
-    $total = wp_strip_all_tags( WC()->cart->get_cart_total() );
+    $total = html_entity_decode( wp_strip_all_tags( WC()->cart->get_cart_total() ), ENT_HTML5, 'UTF-8' );
 
     ob_start();
     if ( empty( $items ) ) {
@@ -136,13 +162,17 @@ function slg_ajax_get_cart() {
             $qty     = $cart_item['quantity'];
             $img_id  = $product->get_image_id();
             $img_url = $img_id
-                ? wp_get_attachment_image_url( $img_id, 'thumbnail' )
+                ? wp_get_attachment_image_url( $img_id, 'slg-product-thumb' )
                 : wc_placeholder_img_src();
             ?>
-            <div class="cart-item" data-cart-key="<?php echo esc_attr( $cart_item_key ); ?>">
+            <div class="cart-item" data-cart-key="<?php echo esc_attr( $cart_item_key ); ?>" data-product-id="<?php echo esc_attr( $cart_item['product_id'] ); ?>">
                 <label class="item-check">
                     <input type="checkbox" checked />
-                    <span class="checkmark"></span>
+                    <span class="checkmark">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="9" height="7" viewBox="0 0 9 7" fill="none">
+                            <path d="M0.5 3.07583L3.1297 5.65152L8.31414 0.5" stroke="black" stroke-linecap="round"/>
+                        </svg>
+                    </span>
                 </label>
                 <div class="item-image">
                     <img src="<?php echo esc_url( $img_url ); ?>" alt="<?php echo esc_attr( $product->get_name() ); ?>">
@@ -151,9 +181,18 @@ function slg_ajax_get_cart() {
                     <h3 class="item-title"><?php echo esc_html( $product->get_name() ); ?></h3>
                     <p class="item-price"><?php echo wp_kses_post( $product->get_price_html() ); ?></p>
                     <div class="item-quantity">
-                        <button class="qty-btn minus" data-key="<?php echo esc_attr( $cart_item_key ); ?>">−</button>
+                        <button class="qty-btn minus" data-key="<?php echo esc_attr( $cart_item_key ); ?>">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="1" viewBox="0 0 14 1" fill="none">
+                                <path d="M0.5 0.5H12.9502" stroke="black" stroke-linecap="round"/>
+                            </svg>
+                        </button>
                         <span class="qty-value"><?php echo esc_html( $qty ); ?></span>
-                        <button class="qty-btn plus"  data-key="<?php echo esc_attr( $cart_item_key ); ?>">+</button>
+                        <button class="qty-btn plus" data-key="<?php echo esc_attr( $cart_item_key ); ?>">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M0.5 6.77637H12.9502" stroke="black" stroke-linecap="round"/>
+                                <path d="M6.72461 0.5L6.72461 13.0527" stroke="black" stroke-linecap="round"/>
+                            </svg>
+                        </button>
                         <button class="remove-btn"    data-key="<?php echo esc_attr( $cart_item_key ); ?>">Remove</button>
                     </div>
                 </div>
