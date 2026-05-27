@@ -598,7 +598,7 @@ body {
 ====================== */
 .info-bar {
     position: absolute;
-    bottom: 0;
+    bottom: 100%;
     left: 0;
     width: 100%;
     background: rgba(255,255,255,.6);
@@ -1135,8 +1135,6 @@ body {
     }
 
     .info-bar {
-        position: fixed;
-        bottom: calc(52px + env(safe-area-inset-bottom));
         padding: 16px 12px;
     }
 

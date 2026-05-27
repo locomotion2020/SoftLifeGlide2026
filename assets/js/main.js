@@ -340,20 +340,23 @@ jQuery(function ($) {
 
     // Touch swipe
     var swipeStartX = 0;
-    document.getElementById('gallery-modal').addEventListener('touchstart', function (e) {
-        swipeStartX = e.touches[0].clientX;
-    }, { passive: true });
-    document.getElementById('gallery-modal').addEventListener('touchend', function (e) {
-        if ( ! $('#gallery-modal').hasClass('active') ) return;
-        var dx = e.changedTouches[0].clientX - swipeStartX;
-        if (Math.abs(dx) < 50) return;
-        if (dx < 0) {
-            galleryIndex = (galleryIndex + 1) % galleryImages.length;
-        } else {
-            galleryIndex = (galleryIndex - 1 + galleryImages.length) % galleryImages.length;
-        }
-        showGallerySlide();
-    }, { passive: true });
+    var galleryModal = document.getElementById('gallery-modal');
+    if (galleryModal) {
+        galleryModal.addEventListener('touchstart', function (e) {
+            swipeStartX = e.touches[0].clientX;
+        }, { passive: true });
+        galleryModal.addEventListener('touchend', function (e) {
+            if ( ! $('#gallery-modal').hasClass('active') ) return;
+            var dx = e.changedTouches[0].clientX - swipeStartX;
+            if (Math.abs(dx) < 50) return;
+            if (dx < 0) {
+                galleryIndex = (galleryIndex + 1) % galleryImages.length;
+            } else {
+                galleryIndex = (galleryIndex - 1 + galleryImages.length) % galleryImages.length;
+            }
+            showGallerySlide();
+        }, { passive: true });
+    }
 
     /* ======================
        CART — SHARED UI UPDATE

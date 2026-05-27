@@ -2,6 +2,22 @@
      SITE FOOTER
 ===================== -->
 <footer class="site-footer">
+    <!-- =====================
+         INFORMATION BAR
+         (opened by "Information" footer link)
+    ===================== -->
+    <div class="info-bar" id="info-bar">
+        <div class="info-bar-text">
+            <?php if ( $v = get_field( 'shop_name',            'option' ) ) : ?><p><?php echo esc_html( $v ); ?></p><?php endif; ?>
+            <?php if ( $v = get_field( 'ceo_name',             'option' ) ) : ?><p>CEO | <?php echo esc_html( $v ); ?></p><?php endif; ?>
+            <?php if ( $v = get_field( 'contact_number',       'option' ) ) : ?><p>Contact Number | <?php echo esc_html( $v ); ?></p><?php endif; ?>
+            <?php if ( $v = get_field( 'e-mail',               'option' ) ) : ?><p>Email | <?php echo esc_html( $v ); ?></p><?php endif; ?>
+            <?php if ( $v = get_field( 'business_number',      'option' ) ) : ?><p>Business Number | <?php echo esc_html( $v ); ?></p><?php endif; ?>
+            <?php if ( $v = get_field( 'sales_number',         'option' ) ) : ?><p>Sales Number | <?php echo esc_html( $v ); ?></p><?php endif; ?>
+            <?php if ( $v = get_field( 'chief_privacy_officer','option' ) ) : ?><p>Chief Privacy Officer | <?php echo esc_html( $v ); ?></p><?php endif; ?>
+            <?php if ( $v = get_field( 'address',              'option' ) ) : ?><p>Address | <?php echo esc_html( $v ); ?></p><?php endif; ?>
+        </div>
+    </div>
     <span class="footer-copy">©2026</span>
     <nav class="footer-nav">
         <button class="footer-nav-btn" id="footer-information">Information</button>
@@ -94,23 +110,6 @@
     </div>
     
     
-</div>
-
-<!-- =====================
-     INFORMATION BAR
-     (opened by "Information" footer link)
-===================== -->
-<div class="info-bar" id="info-bar">
-    <div class="info-bar-text">
-        <?php if ( $v = get_field( 'shop_name',            'option' ) ) : ?><p><?php echo esc_html( $v ); ?></p><?php endif; ?>
-        <?php if ( $v = get_field( 'ceo_name',             'option' ) ) : ?><p>CEO | <?php echo esc_html( $v ); ?></p><?php endif; ?>
-        <?php if ( $v = get_field( 'contact_number',       'option' ) ) : ?><p>Contact Number | <?php echo esc_html( $v ); ?></p><?php endif; ?>
-        <?php if ( $v = get_field( 'e-mail',               'option' ) ) : ?><p>Email | <?php echo esc_html( $v ); ?></p><?php endif; ?>
-        <?php if ( $v = get_field( 'business_number',      'option' ) ) : ?><p>Business Number | <?php echo esc_html( $v ); ?></p><?php endif; ?>
-        <?php if ( $v = get_field( 'sales_number',         'option' ) ) : ?><p>Sales Number | <?php echo esc_html( $v ); ?></p><?php endif; ?>
-        <?php if ( $v = get_field( 'chief_privacy_officer','option' ) ) : ?><p>Chief Privacy Officer | <?php echo esc_html( $v ); ?></p><?php endif; ?>
-        <?php if ( $v = get_field( 'address',              'option' ) ) : ?><p>Address | <?php echo esc_html( $v ); ?></p><?php endif; ?>
-    </div>
 </div>
 
 <!-- =====================
